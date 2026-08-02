@@ -2,14 +2,15 @@
 export const PLAYER_SPEED = 9;
 export const JUMP_FORCE = 11;
 export const GRAVITY = 28;
-export const PLAYER_RADIUS = 0.7;
-export const PLAYER_HEIGHT = 1.4;
+export const PLAYER_RADIUS = 0.8;   // slightly larger with 15% bigger player
+export const PLAYER_HEIGHT = 1.6;  // 15% bigger
 
 export const GARLIC_THRESHOLD = 10;
 export const LIFE_REGAIN_THRESHOLD = 100;
 export const PETRIFY_DURATION = 10; // seconds the stone stays
 export const DIFFICULTY_STEP = 30; // every X garlic collected → harder
 export const STARTING_LIVES = 5;
+export const INVULN_DURATION = 1.6; // seconds of invulnerability after losing a life
 
 export const CHUNK_SIZE = 40;
 export const VIEW_DISTANCE = 3; // chunks around player

@@ -13,7 +13,8 @@ import {
   DUCK_SPAWN_INTERVAL_DAY,
   DUCK_SPAWN_INTERVAL_NIGHT,
   DAY_LENGTH,
-  NIGHT_LENGTH
+  NIGHT_LENGTH,
+  INVULN_DURATION
 } from '../utils/constants.js';
 import { randomRange } from '../utils/helpers.js';
 
@@ -23,10 +24,9 @@ export class Game {
     this.isRunning = false;
     this.clock = new THREE.Clock();
 
-    // Three.js core
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x87ceeb);
-    this.scene.fog = new THREE.Fog(0x87ceeb, 40, 120);
+    this.scene.fog = new THREE.Fog(0x87ceeb, 45, 130);
 
     this.camera = new THREE.PerspectiveCamera(
       45,
@@ -41,11 +41,10 @@ export class Game {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-    // Lighting
-    this.ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
+    this.ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     this.scene.add(this.ambientLight);
 
-    this.dirLight = new THREE.DirectionalLight(0xfff5e0, 1.0);
+    this.dirLight = new THREE.DirectionalLight(0xfff5e0, 1.05);
     this.dirLight.position.set(30, 50, 20);
     this.dirLight.castShadow = true;
     this.dirLight.shadow.mapSize.set(2048, 2048);
@@ -57,7 +56,6 @@ export class Game {
     this.dirLight.shadow.camera.bottom = -50;
     this.scene.add(this.dirLight);
 
-    // Systems
     this.input = new Input();
     this.garlicManager = new GarlicManager(this.scene);
     this.world = new World(this.scene, this.garlicManager);
@@ -65,18 +63,16 @@ export class Game {
     this.cameraController = new CameraController(this.camera, this.player.group);
     this.duckManager = new DuckManager(this.scene);
 
-    // Game state
     this.garlicCount = 0;
-    this.totalGarlicCollected = 0; // for difficulty & life regain
+    this.totalGarlicCollected = 0;
     this.lives = STARTING_LIVES;
     this.score = 0;
     this.isDay = true;
-    this.timeOfDay = 0; // seconds into current cycle
+    this.timeOfDay = 0;
     this.duckSpawnTimer = 0;
     this.difficultyLevel = 0;
 
     this.updateHUD();
-
     window.addEventListener('resize', () => this.onResize());
   }
 
@@ -87,7 +83,6 @@ export class Game {
   }
 
   restart() {
-    // Reset state
     this.garlicCount = 0;
     this.totalGarlicCollected = 0;
     this.lives = STARTING_LIVES;
@@ -97,14 +92,14 @@ export class Game {
     this.duckSpawnTimer = 0;
     this.difficultyLevel = 0;
 
-    // Clear entities
     this.duckManager.clear();
     this.garlicManager.clear();
     this.world.clear();
 
-    // Reset player
-    this.player.group.position.set(0, 0.7, 0);
+    this.player.group.position.set(0, 0.8, 0);
     this.player.velocity.set(0, 0, 0);
+    this.player.invulnTimer = 0;
+    this.player.group.visible = true;
 
     this.updateHUD();
     this.applyDayNightVisuals();
@@ -115,9 +110,9 @@ export class Game {
     if (!this.isRunning) return;
     requestAnimationFrame(() => this.animate());
 
-    const delta = Math.min(this.clock.getDelta(), 0.05); // clamp large spikes
+    const delta = Math.min(this.clock.getDelta(), 0.05);
 
-    // Day / Night cycle
+    // Day / Night
     this.timeOfDay += delta;
     const cycleLen = this.isDay ? DAY_LENGTH : NIGHT_LENGTH;
     if (this.timeOfDay >= cycleLen) {
@@ -127,25 +122,24 @@ export class Game {
       this.updateHUD();
     }
 
-    // Player
     this.player.update(delta, this.input, this.world);
-
-    // World chunks
     this.world.update(this.player.position);
 
-    // Garlic collection
-    this.garlicManager.update(this.player.position, () => {
-      this.garlicCount++;
-      this.totalGarlicCollected++;
-      this.score += 10;
+    // Garlic collection (now receives value)
+    this.garlicManager.update(this.player.position, (value, isSuper) => {
+      this.garlicCount += value;
+      this.totalGarlicCollected += value;
+      this.score += value * 10;
+
+      if (isSuper) {
+        this.score += 40; // bonus for super garlic
+      }
 
       // Life regain
       if (this.garlicCount >= LIFE_REGAIN_THRESHOLD && this.lives < STARTING_LIVES) {
         this.lives++;
-        // Keep garlic at 100 as requested
       }
 
-      // Difficulty step
       if (this.totalGarlicCollected > 0 && this.totalGarlicCollected % DIFFICULTY_STEP === 0) {
         this.difficultyLevel++;
       }
@@ -161,7 +155,6 @@ export class Game {
       this.duckSpawnTimer = base / (1 + this.difficultyLevel * 0.15);
     }
 
-    // Ducks update + collision logic
     this.duckManager.update(
       delta,
       this.player,
@@ -170,12 +163,8 @@ export class Game {
       (duck) => this.handleDuckContact(duck)
     );
 
-    // Score from survival
     this.score += delta * 2;
-
-    // Camera
     this.cameraController.update(delta);
-
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -188,25 +177,28 @@ export class Game {
   }
 
   handleDuckContact(duck) {
+    // Ignore if already invulnerable or duck is not alive
+    if (this.player.isInvulnerable || duck.state !== 'alive') return;
+
     if (this.garlicCount >= GARLIC_THRESHOLD) {
-      // Petrify!
       if (duck.petrify()) {
         this.garlicCount -= GARLIC_THRESHOLD;
         this.score += 50;
-        // Play meowbuf later
         this.updateHUD();
       }
     } else {
-      // Lose a life
+      // Lose exactly 1 life
       this.lives--;
-      this.updateHUD();
+      this.player.setInvulnerable(INVULN_DURATION);
 
-      // Knockback player a bit
+      // Knockback
       const dx = this.player.position.x - duck.position.x;
       const dz = this.player.position.z - duck.position.z;
       const len = Math.sqrt(dx * dx + dz * dz) || 1;
-      this.player.velocity.x += (dx / len) * 8;
-      this.player.velocity.z += (dz / len) * 8;
+      this.player.velocity.x += (dx / len) * 10;
+      this.player.velocity.z += (dz / len) * 10;
+
+      this.updateHUD();
 
       if (this.lives <= 0) {
         this.gameOver();
@@ -218,14 +210,14 @@ export class Game {
     if (this.isDay) {
       this.scene.background.setHex(0x87ceeb);
       this.scene.fog.color.setHex(0x87ceeb);
-      this.ambientLight.intensity = 0.55;
-      this.dirLight.intensity = 1.0;
+      this.ambientLight.intensity = 0.6;
+      this.dirLight.intensity = 1.05;
       this.dirLight.color.setHex(0xfff5e0);
     } else {
       this.scene.background.setHex(0x0a1628);
       this.scene.fog.color.setHex(0x0a1628);
-      this.ambientLight.intensity = 0.25;
-      this.dirLight.intensity = 0.35;
+      this.ambientLight.intensity = 0.28;
+      this.dirLight.intensity = 0.4;
       this.dirLight.color.setHex(0x8899cc);
     }
   }
