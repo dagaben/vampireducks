@@ -21,6 +21,7 @@ export class Game {
   constructor(canvas) {
     this.canvas = canvas;
     this.isRunning = false;
+    this.isPaused = false;
     this.clock = new THREE.Clock();
 
     this.scene = new THREE.Scene();
@@ -77,8 +78,22 @@ export class Game {
 
   start() {
     this.isRunning = true;
+    this.isPaused = false;
     this.clock.start();
     this.animate();
+  }
+
+  togglePause() {
+    if (!this.isRunning) return;
+    this.isPaused = !this.isPaused;
+    const el = document.getElementById('pause-screen');
+    if (this.isPaused) {
+      el.classList.remove('hidden');
+      this.clock.stop();
+    } else {
+      el.classList.add('hidden');
+      this.clock.start();
+    }
   }
 
   restart() {
@@ -90,6 +105,8 @@ export class Game {
     this.timeOfDay = 0;
     this.duckSpawnTimer = 0;
     this.difficultyLevel = 0;
+    this.isPaused = false;
+    document.getElementById('pause-screen').classList.add('hidden');
 
     this.duckManager.clear();
     this.garlicManager.clear();
@@ -109,9 +126,13 @@ export class Game {
     if (!this.isRunning) return;
     requestAnimationFrame(() => this.animate());
 
+    if (this.isPaused) {
+      this.renderer.render(this.scene, this.camera);
+      return;
+    }
+
     const delta = Math.min(this.clock.getDelta(), 0.05);
 
-    // Day / Night cycle
     this.timeOfDay += delta;
     const cycleLen = this.isDay ? DAY_LENGTH : NIGHT_LENGTH;
     if (this.timeOfDay >= cycleLen) {
@@ -119,11 +140,9 @@ export class Game {
       this.isDay = !this.isDay;
 
       if (this.isDay) {
-        // Dawn: all vampire ducks flee / vanish — safe collecting time
         this.duckManager.clear();
         this.duckSpawnTimer = 0;
       } else {
-        // Dusk: start spawning ducks soon
         this.duckSpawnTimer = 1.5;
       }
 
@@ -151,7 +170,6 @@ export class Game {
       this.updateHUD();
     });
 
-    // Ducks ONLY during night — day is free garlic collecting
     if (!this.isDay) {
       this.duckSpawnTimer -= delta;
       if (this.duckSpawnTimer <= 0) {
@@ -163,7 +181,7 @@ export class Game {
       this.duckManager.update(
         delta,
         this.player,
-        true, // night = more aggressive movement already in Duck
+        true,
         this.world,
         (duck) => this.handleDuckContact(duck)
       );
@@ -234,6 +252,8 @@ export class Game {
 
   gameOver() {
     this.isRunning = false;
+    this.isPaused = false;
+    document.getElementById('pause-screen').classList.add('hidden');
     document.getElementById('final-score').textContent = `Score: ${Math.floor(this.score)}`;
     document.getElementById('game-over-screen').classList.remove('hidden');
   }
