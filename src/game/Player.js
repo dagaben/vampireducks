@@ -2,22 +2,20 @@ import * as THREE from 'three';
 import { PLAYER_SPEED, JUMP_FORCE, GRAVITY, PLAYER_RADIUS, PLAYER_HEIGHT } from '../utils/constants.js';
 
 /**
- * More detailed cute chibi CatDog.
+ * Detailed cute chibi CatDog — follows gentle terrain height.
  */
 export class Player {
   constructor(scene) {
     this.scene = scene;
     this.group = new THREE.Group();
-    const s = 1.15; // 15% bigger base
+    const s = 1.15;
 
-    // === BODY ===
     const bodyGeo = new THREE.CapsuleGeometry(0.52 * s, 0.55 * s, 6, 10);
     const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffb366 });
     this.body = new THREE.Mesh(bodyGeo, bodyMat);
     this.body.castShadow = true;
     this.group.add(this.body);
 
-    // === HEAD ===
     const headGeo = new THREE.SphereGeometry(0.5 * s, 14, 12);
     const headMat = new THREE.MeshStandardMaterial({ color: 0xffcc88 });
     this.head = new THREE.Mesh(headGeo, headMat);
@@ -25,7 +23,6 @@ export class Player {
     this.head.castShadow = true;
     this.group.add(this.head);
 
-    // Cat ears
     const earGeo = new THREE.ConeGeometry(0.2 * s, 0.4 * s, 6);
     const earMat = new THREE.MeshStandardMaterial({ color: 0xffaa55 });
     const earL = new THREE.Mesh(earGeo, earMat);
@@ -37,7 +34,6 @@ export class Player {
     earR.rotation.z = -0.35;
     this.group.add(earR);
 
-    // Inner ear pink
     const innerEarGeo = new THREE.ConeGeometry(0.1 * s, 0.22 * s, 5);
     const innerEarMat = new THREE.MeshStandardMaterial({ color: 0xffaaaa });
     const innerL = new THREE.Mesh(innerEarGeo, innerEarMat);
@@ -49,7 +45,6 @@ export class Player {
     innerR.rotation.z = -0.35;
     this.group.add(innerR);
 
-    // Eyes
     const eyeWhiteGeo = new THREE.SphereGeometry(0.13 * s, 8, 6);
     const eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
     const eyeL = new THREE.Mesh(eyeWhiteGeo, eyeWhiteMat);
@@ -59,7 +54,6 @@ export class Player {
     eyeR.position.x = 0.18 * s;
     this.group.add(eyeR);
 
-    // Pupils
     const pupilGeo = new THREE.SphereGeometry(0.07 * s, 6, 5);
     const pupilMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
     const pupilL = new THREE.Mesh(pupilGeo, pupilMat);
@@ -69,14 +63,12 @@ export class Player {
     pupilR.position.x = 0.18 * s;
     this.group.add(pupilR);
 
-    // Nose (dog-like)
     const noseGeo = new THREE.SphereGeometry(0.12 * s, 8, 6);
     const noseMat = new THREE.MeshStandardMaterial({ color: 0x3a2211 });
     const nose = new THREE.Mesh(noseGeo, noseMat);
     nose.position.set(0, 0.95 * s, 0.48 * s);
     this.group.add(nose);
 
-    // Mouth (simple smile)
     const mouthGeo = new THREE.TorusGeometry(0.1 * s, 0.025 * s, 6, 10, Math.PI);
     const mouthMat = new THREE.MeshStandardMaterial({ color: 0x552211 });
     const mouth = new THREE.Mesh(mouthGeo, mouthMat);
@@ -84,7 +76,6 @@ export class Player {
     mouth.rotation.x = Math.PI;
     this.group.add(mouth);
 
-    // === PAWS (front) ===
     const pawGeo = new THREE.SphereGeometry(0.18 * s, 8, 6);
     const pawMat = new THREE.MeshStandardMaterial({ color: 0xffaa66 });
     const pawFL = new THREE.Mesh(pawGeo, pawMat);
@@ -95,7 +86,6 @@ export class Player {
     pawFR.position.x = 0.35 * s;
     this.group.add(pawFR);
 
-    // Back paws
     const pawBL = pawFL.clone();
     pawBL.position.set(-0.3 * s, -0.55 * s, -0.3 * s);
     this.group.add(pawBL);
@@ -103,7 +93,6 @@ export class Player {
     pawBR.position.set(0.3 * s, -0.55 * s, -0.3 * s);
     this.group.add(pawBR);
 
-    // Tail (dog-like curve)
     const tailGeo = new THREE.CapsuleGeometry(0.08 * s, 0.5 * s, 4, 6);
     const tailMat = new THREE.MeshStandardMaterial({ color: 0xffb366 });
     const tail = new THREE.Mesh(tailGeo, tailMat);
@@ -160,18 +149,19 @@ export class Player {
     nextPos.z += this.velocity.z * delta;
     if (world) world.resolveCollisions(nextPos, this.radius);
 
-    // Sample terrain height
-    let groundY = PLAYER_HEIGHT / 2;
-    if (world) {
-      groundY = world.getHeightAt(nextPos.x, nextPos.z) + PLAYER_HEIGHT / 2;
-    }
+    // Terrain height under feet
+    const terrainY = world ? world.getHeightAt(nextPos.x, nextPos.z) : 0;
+    const groundY = terrainY + PLAYER_HEIGHT / 2;
 
     nextPos.y += this.velocity.y * delta;
 
-    if (nextPos.y <= groundY) {
+    // Stick to ground when walking / landing (climb gentle hills)
+    if (nextPos.y <= groundY + 0.05) {
       nextPos.y = groundY;
       this.velocity.y = 0;
       this.onGround = true;
+    } else {
+      this.onGround = false;
     }
 
     this.group.position.copy(nextPos);

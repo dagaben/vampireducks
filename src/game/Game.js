@@ -112,7 +112,6 @@ export class Game {
 
     const delta = Math.min(this.clock.getDelta(), 0.05);
 
-    // Day / Night
     this.timeOfDay += delta;
     const cycleLen = this.isDay ? DAY_LENGTH : NIGHT_LENGTH;
     if (this.timeOfDay >= cycleLen) {
@@ -125,17 +124,12 @@ export class Game {
     this.player.update(delta, this.input, this.world);
     this.world.update(this.player.position);
 
-    // Garlic collection (now receives value)
     this.garlicManager.update(this.player.position, (value, isSuper) => {
       this.garlicCount += value;
       this.totalGarlicCollected += value;
       this.score += value * 10;
+      if (isSuper) this.score += 40;
 
-      if (isSuper) {
-        this.score += 40; // bonus for super garlic
-      }
-
-      // Life regain
       if (this.garlicCount >= LIFE_REGAIN_THRESHOLD && this.lives < STARTING_LIVES) {
         this.lives++;
       }
@@ -147,7 +141,6 @@ export class Game {
       this.updateHUD();
     });
 
-    // Duck spawning
     this.duckSpawnTimer -= delta;
     if (this.duckSpawnTimer <= 0) {
       this.spawnDuckNearPlayer();
@@ -159,7 +152,7 @@ export class Game {
       delta,
       this.player,
       !this.isDay,
-      null,
+      this.world,
       (duck) => this.handleDuckContact(duck)
     );
 
@@ -177,7 +170,6 @@ export class Game {
   }
 
   handleDuckContact(duck) {
-    // Ignore if already invulnerable or duck is not alive
     if (this.player.isInvulnerable || duck.state !== 'alive') return;
 
     if (this.garlicCount >= GARLIC_THRESHOLD) {
@@ -187,11 +179,9 @@ export class Game {
         this.updateHUD();
       }
     } else {
-      // Lose exactly 1 life
       this.lives--;
       this.player.setInvulnerable(INVULN_DURATION);
 
-      // Knockback
       const dx = this.player.position.x - duck.position.x;
       const dz = this.player.position.z - duck.position.z;
       const len = Math.sqrt(dx * dx + dz * dz) || 1;

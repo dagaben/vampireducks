@@ -3,7 +3,7 @@ import { CHUNK_SIZE, VIEW_DISTANCE } from '../utils/constants.js';
 import { hash, randomRange } from '../utils/helpers.js';
 
 /**
- * Hilly procedural forest with small clean lakes, rivers + bridges, diverse vegetation.
+ * Gentle hilly forest. Lakes stay clear of trees/rocks.
  */
 export class World {
   constructor(scene, garlicManager) {
@@ -11,7 +11,9 @@ export class World {
     this.garlicManager = garlicManager;
     this.chunks = new Map();
     this.obstacles = [];
-    this.waterZones = []; // {x, z, radius}
+    // Water zones: lakes {type:'lake', x, z, radius}
+    // rivers {type:'river', x, z, halfW, halfL, horizontal}
+    this.waterZones = [];
 
     this.treeTrunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
     this.pineTrunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2b1f });
@@ -38,14 +40,13 @@ export class World {
       new THREE.MeshStandardMaterial({ color: 0xffffff })
     ];
 
-    // Base ground with hills
-    const groundGeo = new THREE.PlaneGeometry(600, 600, 80, 80);
+    // Gentle hills only (max ~1.2) so characters can climb
+    const groundGeo = new THREE.PlaneGeometry(600, 600, 64, 64);
     const pos = groundGeo.attributes.position;
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i);
       const z = pos.getY(i);
-      const h = this._noiseHeight(x, z);
-      pos.setZ(i, h);
+      pos.setZ(i, this._noiseHeight(x, z));
     }
     groundGeo.computeVertexNormals();
     const groundMat = new THREE.MeshStandardMaterial({ color: 0x7cb342 });
@@ -55,11 +56,11 @@ export class World {
     scene.add(this.ground);
   }
 
+  // Gentle rolling hills — climbable, no clipping look
   _noiseHeight(x, z) {
-    const n1 = Math.sin(x * 0.03) * Math.cos(z * 0.025) * 2.8;
-    const n2 = Math.sin(x * 0.07 + 1.3) * Math.cos(z * 0.06) * 1.4;
-    const n3 = Math.sin(x * 0.015) * Math.sin(z * 0.018) * 3.5;
-    return Math.max(0, n1 + n2 + n3 * 0.6);
+    const n1 = Math.sin(x * 0.025) * Math.cos(z * 0.022) * 0.7;
+    const n2 = Math.sin(x * 0.05 + 1.3) * Math.cos(z * 0.045) * 0.35;
+    return Math.max(0, n1 + n2);
   }
 
   getHeightAt(x, z) {
@@ -82,9 +83,42 @@ export class World {
 
   _isOnWater(x, z) {
     for (const w of this.waterZones) {
-      const dx = x - w.x;
-      const dz = z - w.z;
-      if (dx * dx + dz * dz < w.radius * w.radius) return true;
+      if (w.type === 'lake') {
+        const dx = x - w.x;
+        const dz = z - w.z;
+        if (dx * dx + dz * dz < w.radius * w.radius) return true;
+      } else if (w.type === 'river') {
+        if (w.horizontal) {
+          if (Math.abs(z - w.z) < w.halfW && Math.abs(x - w.x) < w.halfL) return true;
+        } else {
+          if (Math.abs(x - w.x) < w.halfW && Math.abs(z - w.z) < w.halfL) return true;
+        }
+      }
+    }
+    // Also predict lakes from neighboring chunks not yet generated
+    return this._predictLakeAt(x, z);
+  }
+
+  /** Deterministic: would a lake cover this world point? */
+  _predictLakeAt(x, z) {
+    const cx = Math.floor(x / CHUNK_SIZE);
+    const cz = Math.floor(z / CHUNK_SIZE);
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dz = -1; dz <= 1; dz++) {
+        const ncx = cx + dx;
+        const ncz = cz + dz;
+        if (hash(ncx * 2.1, ncz * 3.7) <= 0.88) continue;
+        const radius = 3.0 + hash(ncx + 11, ncz + 13) * 2.5; // 3–5.5
+        const margin = 2.2; // keep trees well clear of water edge
+        const baseX = ncx * CHUNK_SIZE;
+        const baseZ = ncz * CHUNK_SIZE;
+        const lx = baseX + 8 + hash(ncx + 5, ncz) * (CHUNK_SIZE - 16);
+        const lz = baseZ + 8 + hash(ncx, ncz + 9) * (CHUNK_SIZE - 16);
+        if (Math.sqrt(lx * lx + lz * lz) <= 18) continue;
+        const ddx = x - lx;
+        const ddz = z - lz;
+        if (ddx * ddx + ddz * ddz < (radius + margin) * (radius + margin)) return true;
+      }
     }
     return false;
   }
@@ -95,9 +129,9 @@ export class World {
     const baseX = cx * CHUNK_SIZE;
     const baseZ = cz * CHUNK_SIZE;
 
-    // Small clean lakes
+    // === SMALL CLEAN LAKES ===
     if (hash(cx * 2.1, cz * 3.7) > 0.88) {
-      const radius = randomRange(3.0, 5.5);
+      const radius = 3.0 + hash(cx + 11, cz + 13) * 2.5;
       const lx = baseX + 8 + hash(cx + 5, cz) * (CHUNK_SIZE - 16);
       const lz = baseZ + 8 + hash(cx, cz + 9) * (CHUNK_SIZE - 16);
 
@@ -106,17 +140,21 @@ export class World {
         const lake = new THREE.Mesh(lakeGeo, this.waterMat);
         lake.rotation.x = -Math.PI / 2;
         const h = this.getHeightAt(lx, lz);
-        lake.position.set(lx, h + 0.05, lz);
+        lake.position.set(lx, h + 0.06, lz);
         this.scene.add(lake);
         objects.push(lake);
-        this.waterZones.push({ x: lx, z: lz, radius: radius + 0.8 });
+        // Generous margin so nothing sits on the shore/water
+        this.waterZones.push({ type: 'lake', x: lx, z: lz, radius: radius + 2.2 });
       }
     }
 
-    // Rivers + bridges
+    // === NARROW RIVERS + BRIDGES ===
     if (hash(cx * 1.7, cz * 2.3) > 0.78) {
-      const riverWidth = 3.5;
+      const riverWidth = 3.2;
       const isHorizontal = hash(cx, cz + 11) > 0.5;
+      const rx = baseX + CHUNK_SIZE / 2;
+      const rz = baseZ + CHUNK_SIZE / 2;
+      const rh = this.getHeightAt(rx, rz);
 
       const riverGeo = new THREE.PlaneGeometry(
         isHorizontal ? CHUNK_SIZE : riverWidth,
@@ -124,17 +162,18 @@ export class World {
       );
       const river = new THREE.Mesh(riverGeo, this.waterMat);
       river.rotation.x = -Math.PI / 2;
-      const rx = baseX + CHUNK_SIZE / 2;
-      const rz = baseZ + CHUNK_SIZE / 2;
-      const rh = this.getHeightAt(rx, rz);
-      river.position.set(rx, rh + 0.04, rz);
+      river.position.set(rx, rh + 0.05, rz);
       this.scene.add(river);
       objects.push(river);
 
+      // Strip-shaped exclusion (not a huge circle)
       this.waterZones.push({
+        type: 'river',
         x: rx,
         z: rz,
-        radius: isHorizontal ? CHUNK_SIZE * 0.55 : riverWidth * 1.2
+        halfW: riverWidth * 0.5 + 1.5,
+        halfL: CHUNK_SIZE * 0.55,
+        horizontal: isHorizontal
       });
 
       if (hash(cx + 3, cz + 4) > 0.35) {
@@ -163,7 +202,7 @@ export class World {
       objects.push(path);
     }
 
-    // Trees / pines / bushes – never on water
+    // Trees — never on water (including predicted lakes from neighbors)
     const treeCount = 5 + Math.floor(hash(cx * 3, cz * 7) * 7);
     for (let i = 0; i < treeCount; i++) {
       const hx = hash(cx + i * 13, cz + i * 17);
@@ -204,7 +243,7 @@ export class World {
       this._createFlower(x, z, objects);
     }
 
-    // Garlic + Super Garlic – place at correct terrain height
+    // Garlic
     const garlicCount = 2 + Math.floor(hash(cx * 7, cz * 9) * 3);
     for (let i = 0; i < garlicCount; i++) {
       const hx = hash(cx + i * 47, cz + i * 53);
