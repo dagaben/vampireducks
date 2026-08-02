@@ -23,7 +23,7 @@ export class Game {
     this.isRunning = false;
     this.isPaused = false;
     this.clock = new THREE.Clock();
-    this.onGameOver = null; // callback set by main.js
+    this.onGameOver = null;
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x87ceeb);
@@ -133,6 +133,12 @@ export class Game {
     }
 
     const delta = Math.min(this.clock.getDelta(), 0.05);
+
+    // Pinch-to-zoom (mobile 2-finger)
+    const zoomDelta = this.input.consumePinchZoomDelta();
+    if (zoomDelta !== 0) {
+      this.cameraController.applyZoomDelta(zoomDelta);
+    }
 
     this.timeOfDay += delta;
     const cycleLen = this.isDay ? DAY_LENGTH : NIGHT_LENGTH;
