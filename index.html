@@ -29,13 +29,16 @@
     <div id="start-screen" class="overlay">
       <img
         id="title-banner"
-        src="./title-banner.svg"
+        src=""
         alt="Vampire Ducks — Collect garlic by day. Fight off rubber duck vampires at night"
         width="900"
-        height="420"
+        height="506"
       />
-      <p class="tagline">Collect garlic by day. Survive the rubber vampire ducks by night!</p>
       <button id="start-button">PLAY</button>
+      <div id="home-leaderboard" class="leaderboard">
+        <h2>🏆 TOP 10</h2>
+        <ol id="home-scores"></ol>
+      </div>
       <p class="controls-hint">Desktop: Arrow keys + J to jump · P to pause<br>Mobile: Joystick + Jump</p>
     </div>
 
@@ -45,9 +48,26 @@
       <button id="resume-button">Resume</button>
     </div>
 
+    <!-- Game Over + name entry + leaderboard -->
     <div id="game-over-screen" class="overlay hidden">
       <h1>Game Over</h1>
       <p id="final-score">Score: 0</p>
+
+      <div id="name-entry" class="hidden">
+        <p class="name-prompt">NEW HIGH SCORE! Enter your initials</p>
+        <div class="initials-row">
+          <input id="initial-0" class="initial-input" type="text" maxlength="1" value="A" />
+          <input id="initial-1" class="initial-input" type="text" maxlength="1" value="A" />
+          <input id="initial-2" class="initial-input" type="text" maxlength="1" value="A" />
+        </div>
+        <button id="submit-name-button">SAVE</button>
+      </div>
+
+      <div id="go-leaderboard" class="leaderboard hidden">
+        <h2>🏆 TOP 10</h2>
+        <ol id="go-scores"></ol>
+      </div>
+
       <button id="restart-button">Play Again</button>
     </div>
   </div>
