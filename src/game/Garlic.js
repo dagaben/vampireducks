@@ -1,24 +1,22 @@
 import * as THREE from 'three';
 
 /**
- * Normal garlic + Super Garlic (worth 10).
+ * Normal garlic + Super Garlic (golden, worth 10).
  */
 export class GarlicManager {
   constructor(scene) {
     this.scene = scene;
     this.garlics = [];
 
-    // Normal garlic
     this.geo = new THREE.SphereGeometry(0.35, 10, 8);
     this.mat = new THREE.MeshStandardMaterial({ color: 0xe8e0c8, roughness: 0.7 });
 
-    // Super garlic (golden + bigger)
-    this.superGeo = new THREE.SphereGeometry(0.55, 12, 10);
+    this.superGeo = new THREE.SphereGeometry(0.6, 12, 10);
     this.superMat = new THREE.MeshStandardMaterial({
       color: 0xffd700,
-      emissive: 0x886600,
-      emissiveIntensity: 0.4,
-      roughness: 0.4
+      emissive: 0xaa7700,
+      emissiveIntensity: 0.55,
+      roughness: 0.35
     });
   }
 
@@ -27,16 +25,32 @@ export class GarlicManager {
       isSuper ? this.superGeo : this.geo,
       isSuper ? this.superMat : this.mat
     );
-    mesh.position.set(x, isSuper ? 0.6 : 0.4, z);
+    mesh.position.set(x, isSuper ? 0.7 : 0.4, z);
     mesh.castShadow = true;
 
-    // Stem
     const stem = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.04, 0.04, isSuper ? 0.35 : 0.25),
+      new THREE.CylinderGeometry(0.05, 0.05, isSuper ? 0.4 : 0.25),
       new THREE.MeshStandardMaterial({ color: 0x4a7c3a })
     );
-    stem.position.y = isSuper ? 0.65 : 0.45;
+    stem.position.y = isSuper ? 0.7 : 0.45;
     mesh.add(stem);
+
+    // Extra glow ring for Super Garlic so it stands out
+    if (isSuper) {
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(0.7, 0.06, 8, 16),
+        new THREE.MeshStandardMaterial({
+          color: 0xffee88,
+          emissive: 0xffcc00,
+          emissiveIntensity: 0.6,
+          transparent: true,
+          opacity: 0.7
+        })
+      );
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = 0.1;
+      mesh.add(ring);
+    }
 
     this.scene.add(mesh);
     this.garlics.push({
@@ -52,13 +66,12 @@ export class GarlicManager {
       const g = this.garlics[i];
       if (g.collected) continue;
 
-      // Gentle float + spin
-      const baseY = g.isSuper ? 0.6 : 0.4;
-      g.mesh.position.y = baseY + Math.sin(Date.now() * 0.004 + i) * 0.15;
-      g.mesh.rotation.y += g.isSuper ? 0.04 : 0.02;
+      const baseY = g.isSuper ? 0.7 : 0.4;
+      g.mesh.position.y = baseY + Math.sin(Date.now() * 0.004 + i) * 0.18;
+      g.mesh.rotation.y += g.isSuper ? 0.05 : 0.02;
 
       const dist = playerPos.distanceTo(g.mesh.position);
-      if (dist < (g.isSuper ? 1.6 : 1.3)) {
+      if (dist < (g.isSuper ? 1.8 : 1.35)) {
         g.collected = true;
         this.scene.remove(g.mesh);
         this.garlics.splice(i, 1);
