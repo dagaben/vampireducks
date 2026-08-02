@@ -1,5 +1,5 @@
 /**
- * Handles both desktop keyboard and mobile virtual joystick + jump.
+ * Handles both desktop keyboard and mobile virtual joystick + jump + pinch zoom.
  */
 export class Input {
   constructor() {
@@ -14,6 +14,11 @@ export class Input {
     this.joystick = { x: 0, y: 0, active: false };
     this.jumpPressed = false;
     this.jumpJustPressed = false;
+
+    // Pinch zoom state
+    this.pinchZoomDelta = 0;
+    this._pinchStartDist = 0;
+    this._pinching = false;
 
     // Keyboard
     window.addEventListener('keydown', (e) => {
@@ -34,9 +39,9 @@ export class Input {
       }
     });
 
-    // Mobile joystick
     this._setupJoystick();
     this._setupJumpButton();
+    this._setupPinchZoom();
   }
 
   _setupJoystick() {
@@ -47,8 +52,8 @@ export class Input {
     const maxDist = 55;
 
     const onStart = (e) => {
+      if (e.touches && e.touches.length > 1) return;
       const t = e.touches ? e.touches[0] : e;
-      const rect = zone.getBoundingClientRect();
       startX = t.clientX;
       startY = t.clientY;
       this.joystick.active = true;
@@ -57,6 +62,7 @@ export class Input {
 
     const onMove = (e) => {
       if (!this.joystick.active) return;
+      if (e.touches && e.touches.length > 1) return;
       const t = e.touches ? e.touches[0] : e;
       let dx = t.clientX - startX;
       let dy = t.clientY - startY;
@@ -70,7 +76,8 @@ export class Input {
       e.preventDefault();
     };
 
-    const onEnd = () => {
+    const onEnd = (e) => {
+      if (e.touches && e.touches.length > 0) return;
       this.joystick.x = 0;
       this.joystick.y = 0;
       this.joystick.active = false;
@@ -81,7 +88,6 @@ export class Input {
     zone.addEventListener('touchend', onEnd);
     zone.addEventListener('touchcancel', onEnd);
 
-    // Also support mouse for testing
     zone.addEventListener('mousedown', onStart);
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onEnd);
@@ -106,23 +112,66 @@ export class Input {
     btn.addEventListener('mouseup', release);
   }
 
+  _setupPinchZoom() {
+    const getDistance = (touches) => {
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    const onTouchStart = (e) => {
+      if (e.touches.length === 2) {
+        this._pinching = true;
+        this._pinchStartDist = getDistance(e.touches);
+        this.joystick.active = false;
+        this.joystick.x = 0;
+        this.joystick.y = 0;
+        e.preventDefault();
+      }
+    };
+
+    const onTouchMove = (e) => {
+      if (!this._pinching || e.touches.length !== 2) return;
+      const dist = getDistance(e.touches);
+      const delta = dist - this._pinchStartDist;
+      this.pinchZoomDelta += delta;
+      this._pinchStartDist = dist;
+      e.preventDefault();
+    };
+
+    const onTouchEnd = (e) => {
+      if (e.touches.length < 2) {
+        this._pinching = false;
+        this._pinchStartDist = 0;
+      }
+    };
+
+    document.addEventListener('touchstart', onTouchStart, { passive: false });
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend', onTouchEnd);
+    document.addEventListener('touchcancel', onTouchEnd);
+  }
+
+  consumePinchZoomDelta() {
+    const d = this.pinchZoomDelta;
+    this.pinchZoomDelta = 0;
+    return d;
+  }
+
   getMovementVector() {
     let x = 0;
     let z = 0;
 
-    // Keyboard
     if (this.keys.ArrowUp) z -= 1;
     if (this.keys.ArrowDown) z += 1;
     if (this.keys.ArrowLeft) x -= 1;
     if (this.keys.ArrowRight) x += 1;
 
-    // Joystick (y is inverted for screen coords)
     if (this.joystick.active) {
       x += this.joystick.x;
       z += this.joystick.y;
     }
 
-    // Normalize
     const len = Math.sqrt(x * x + z * z);
     if (len > 1) {
       x /= len;
