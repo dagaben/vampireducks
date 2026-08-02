@@ -1,10 +1,9 @@
 import './style.css';
-import { TITLE_POSTER_SRC } from './titlePoster.js';
 import { Game } from './game/Game.js';
 
-// Set the title banner
+// Title banner — using the SVG asset (new poster data URI is prepared and can be swapped in)
 const banner = document.getElementById('title-banner');
-if (banner) banner.src = TITLE_POSTER_SRC;
+if (banner) banner.src = './title-banner.svg';
 
 const canvas = document.getElementById('game-canvas');
 const game = new Game(canvas);
@@ -90,7 +89,6 @@ game.onGameOver = (finalScore) => {
   if (qualifies) {
     document.getElementById('name-entry').classList.remove('hidden');
     document.getElementById('go-leaderboard').classList.add('hidden');
-    // Focus first initial
     const first = document.getElementById('initial-0');
     first.focus();
     first.select();
