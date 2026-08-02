@@ -4,6 +4,7 @@ import { hash, randomRange } from '../utils/helpers.js';
 
 /**
  * Forest world — lakes & rivers stay permanently clear of trees/rocks.
+ * Higher-resolution terrain, denser trees (~+30%) and more bushes.
  * Rivers are narrow so the player can jump across them.
  */
 export class World {
@@ -24,6 +25,7 @@ export class World {
     ];
     this.pineLeafMat = new THREE.MeshStandardMaterial({ color: 0x1a4d2e });
     this.bushMat = new THREE.MeshStandardMaterial({ color: 0x4caf50 });
+    this.bushMat2 = new THREE.MeshStandardMaterial({ color: 0x3d8b4a });
     this.rockMat = new THREE.MeshStandardMaterial({ color: 0x8a8a8a });
     this.waterMat = new THREE.MeshStandardMaterial({
       color: 0x4fc3f7,
@@ -39,7 +41,8 @@ export class World {
       new THREE.MeshStandardMaterial({ color: 0xffffff })
     ];
 
-    const groundGeo = new THREE.PlaneGeometry(600, 600, 64, 64);
+    // Higher resolution ground (was 64x64 → 128x128)
+    const groundGeo = new THREE.PlaneGeometry(600, 600, 128, 128);
     const pos = groundGeo.attributes.position;
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i);
@@ -55,16 +58,16 @@ export class World {
   }
 
   _noiseHeight(x, z) {
-    const n1 = Math.sin(x * 0.025) * Math.cos(z * 0.022) * 0.7;
-    const n2 = Math.sin(x * 0.05 + 1.3) * Math.cos(z * 0.045) * 0.35;
-    return Math.max(0, n1 + n2);
+    const n1 = Math.sin(x * 0.025) * Math.cos(z * 0.022) * 0.65;
+    const n2 = Math.sin(x * 0.05 + 1.3) * Math.cos(z * 0.045) * 0.32;
+    const n3 = Math.sin(x * 0.09 + 0.7) * Math.cos(z * 0.08) * 0.18;
+    return Math.max(0, n1 + n2 + n3);
   }
 
   getHeightAt(x, z) {
     return this._noiseHeight(x, z);
   }
 
-  /** Shared deterministic lake params for a chunk */
   _lakeParams(cx, cz) {
     if (hash(cx * 2 + 17, cz * 3 + 31) <= 0.88) return null;
     const radius = 3.0 + hash(cx + 11, cz + 13) * 1.8;
@@ -106,7 +109,7 @@ export class World {
     }
     const cx = Math.floor(x / CHUNK_SIZE);
     const cz = Math.floor(z / CHUNK_SIZE);
-    const MARGIN = 6.5;
+    const MARGIN = 7.0;
     for (let dx = -1; dx <= 1; dx++) {
       for (let dz = -1; dz <= 1; dz++) {
         const p = this._lakeParams(cx + dx, cz + dz);
@@ -128,14 +131,14 @@ export class World {
     const lake = this._lakeParams(cx, cz);
     if (lake) {
       const { lx, lz, radius } = lake;
-      const lakeGeo = new THREE.CircleGeometry(radius, 24);
+      const lakeGeo = new THREE.CircleGeometry(radius, 32);
       const mesh = new THREE.Mesh(lakeGeo, this.waterMat);
       mesh.rotation.x = -Math.PI / 2;
       const h = this.getHeightAt(lx, lz);
       mesh.position.set(lx, h + 0.08, lz);
       this.scene.add(mesh);
       objects.push(mesh);
-      this.waterZones.push({ type: 'lake', x: lx, z: lz, radius: radius + 6.5 });
+      this.waterZones.push({ type: 'lake', x: lx, z: lz, radius: radius + 7.0 });
     }
 
     if (hash(cx * 1.7, cz * 2.3) > 0.78) {
@@ -159,7 +162,7 @@ export class World {
         type: 'river',
         x: rx,
         z: rz,
-        halfW: riverWidth * 0.5 + 2.8,
+        halfW: riverWidth * 0.5 + 3.0,
         halfL: CHUNK_SIZE * 0.55,
         horizontal: isHorizontal
       });
@@ -189,7 +192,8 @@ export class World {
       }
     }
 
-    const treeCount = 5 + Math.floor(hash(cx * 3, cz * 7) * 7);
+    // Trees ~+30%
+    const treeCount = 7 + Math.floor(hash(cx * 3, cz * 7) * 9);
     for (let i = 0; i < treeCount; i++) {
       const hx = hash(cx + i * 13, cz + i * 17);
       const hz = hash(cx + i * 19, cz + i * 23);
@@ -200,9 +204,22 @@ export class World {
       if (this._isOnWater(x, z)) continue;
 
       const typeRoll = hash(cx + i * 29, cz + i * 31);
-      if (typeRoll < 0.42) this._createRegularTree(x, z, objects);
-      else if (typeRoll < 0.72) this._createPine(x, z, objects);
+      if (typeRoll < 0.48) this._createRegularTree(x, z, objects);
+      else if (typeRoll < 0.82) this._createPine(x, z, objects);
       else this._createBush(x, z, objects);
+    }
+
+    // Extra dedicated bushes
+    const bushCount = 5 + Math.floor(hash(cx * 13, cz * 17) * 8);
+    for (let i = 0; i < bushCount; i++) {
+      const hx = hash(cx + i * 71, cz + i * 73);
+      const hz = hash(cx + i * 79, cz + i * 83);
+      const x = baseX + hx * CHUNK_SIZE;
+      const z = baseZ + hz * CHUNK_SIZE;
+
+      if (Math.sqrt(x * x + z * z) < 12) continue;
+      if (this._isOnWater(x, z)) continue;
+      this._createBush(x, z, objects);
     }
 
     const rockCount = 1 + Math.floor(hash(cx * 5, cz * 11) * 3);
@@ -298,18 +315,19 @@ export class World {
   }
 
   _createBush(x, z, objects) {
-    const scale = randomRange(0.55, 1.05);
+    const scale = randomRange(0.5, 1.1);
     const h = this.getHeightAt(x, z);
+    const mat = Math.random() > 0.5 ? this.bushMat : this.bushMat2;
     const bush = new THREE.Mesh(
       new THREE.SphereGeometry(0.85 * scale, 8, 6),
-      this.bushMat
+      mat
     );
-    bush.position.set(x, h + 0.6 * scale, z);
+    bush.position.set(x, h + 0.55 * scale, z);
     bush.scale.y = 0.65;
     bush.castShadow = true;
     this.scene.add(bush);
     objects.push(bush);
-    this.obstacles.push({ x, z, radius: 0.8 * scale });
+    this.obstacles.push({ x, z, radius: 0.75 * scale });
   }
 
   _createRock(x, z, objects) {
