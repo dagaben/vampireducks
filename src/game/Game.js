@@ -23,6 +23,7 @@ export class Game {
     this.isRunning = false;
     this.isPaused = false;
     this.clock = new THREE.Clock();
+    this.onGameOver = null; // callback set by main.js
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x87ceeb);
@@ -254,8 +255,12 @@ export class Game {
     this.isRunning = false;
     this.isPaused = false;
     document.getElementById('pause-screen').classList.add('hidden');
-    document.getElementById('final-score').textContent = `Score: ${Math.floor(this.score)}`;
-    document.getElementById('game-over-screen').classList.remove('hidden');
+    if (typeof this.onGameOver === 'function') {
+      this.onGameOver(this.score);
+    } else {
+      document.getElementById('final-score').textContent = `Score: ${Math.floor(this.score)}`;
+      document.getElementById('game-over-screen').classList.remove('hidden');
+    }
   }
 
   onResize() {
