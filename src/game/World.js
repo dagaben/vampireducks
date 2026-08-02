@@ -11,9 +11,8 @@ export class World {
     this.garlicManager = garlicManager;
     this.chunks = new Map();
     this.obstacles = [];
-    this.waterZones = []; // {x, z, radius} – no trees/rocks here
+    this.waterZones = []; // {x, z, radius}
 
-    // Materials
     this.treeTrunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
     this.pineTrunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2b1f });
     this.leafMats = [
@@ -39,25 +38,23 @@ export class World {
       new THREE.MeshStandardMaterial({ color: 0xffffff })
     ];
 
-    // Base ground – light green
+    // Base ground with hills
     const groundGeo = new THREE.PlaneGeometry(600, 600, 80, 80);
-    // Simple height displacement for hills
     const pos = groundGeo.attributes.position;
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i);
-      const z = pos.getY(i); // plane is XY before rotation
+      const z = pos.getY(i);
       const h = this._noiseHeight(x, z);
       pos.setZ(i, h);
     }
     groundGeo.computeVertexNormals();
-    const groundMat = new THREE.MeshStandardMaterial({ color: 0x7cb342, flatShading: false });
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0x7cb342 });
     this.ground = new THREE.Mesh(groundGeo, groundMat);
     this.ground.rotation.x = -Math.PI / 2;
     this.ground.receiveShadow = true;
     scene.add(this.ground);
   }
 
-  // Simple value noise for hills
   _noiseHeight(x, z) {
     const n1 = Math.sin(x * 0.03) * Math.cos(z * 0.025) * 2.8;
     const n2 = Math.sin(x * 0.07 + 1.3) * Math.cos(z * 0.06) * 1.4;
@@ -98,14 +95,12 @@ export class World {
     const baseX = cx * CHUNK_SIZE;
     const baseZ = cz * CHUNK_SIZE;
 
-    // === SMALL CLEAN LAKES ===
-    // Rare and small (radius 3–5.5)
+    // Small clean lakes
     if (hash(cx * 2.1, cz * 3.7) > 0.88) {
       const radius = randomRange(3.0, 5.5);
       const lx = baseX + 8 + hash(cx + 5, cz) * (CHUNK_SIZE - 16);
       const lz = baseZ + 8 + hash(cx, cz + 9) * (CHUNK_SIZE - 16);
 
-      // Skip if too close to origin
       if (Math.sqrt(lx * lx + lz * lz) > 18) {
         const lakeGeo = new THREE.CircleGeometry(radius, 20);
         const lake = new THREE.Mesh(lakeGeo, this.waterMat);
@@ -118,7 +113,7 @@ export class World {
       }
     }
 
-    // === RIVERS (narrow strips) + BRIDGES ===
+    // Rivers + bridges
     if (hash(cx * 1.7, cz * 2.3) > 0.78) {
       const riverWidth = 3.5;
       const isHorizontal = hash(cx, cz + 11) > 0.5;
@@ -136,14 +131,12 @@ export class World {
       this.scene.add(river);
       objects.push(river);
 
-      // Register as water zone (approximate)
       this.waterZones.push({
         x: rx,
         z: rz,
         radius: isHorizontal ? CHUNK_SIZE * 0.55 : riverWidth * 1.2
       });
 
-      // Bridge
       if (hash(cx + 3, cz + 4) > 0.35) {
         const bridge = new THREE.Mesh(
           new THREE.BoxGeometry(isHorizontal ? 5 : 3.2, 0.35, isHorizontal ? 3.2 : 5),
@@ -156,7 +149,7 @@ export class World {
       }
     }
 
-    // === PATHS (dirt paths) ===
+    // Paths
     if (hash(cx * 4.1, cz * 5.3) > 0.7) {
       const path = new THREE.Mesh(
         new THREE.PlaneGeometry(4, CHUNK_SIZE * 0.7),
@@ -170,7 +163,7 @@ export class World {
       objects.push(path);
     }
 
-    // === TREES / PINES / BUSHES (never on water) ===
+    // Trees / pines / bushes – never on water
     const treeCount = 5 + Math.floor(hash(cx * 3, cz * 7) * 7);
     for (let i = 0; i < treeCount; i++) {
       const hx = hash(cx + i * 13, cz + i * 17);
@@ -187,7 +180,7 @@ export class World {
       else this._createBush(x, z, objects);
     }
 
-    // Rocks (never on water)
+    // Rocks
     const rockCount = 1 + Math.floor(hash(cx * 5, cz * 11) * 3);
     for (let i = 0; i < rockCount; i++) {
       const hx = hash(cx + i * 31, cz + i * 37);
@@ -211,7 +204,7 @@ export class World {
       this._createFlower(x, z, objects);
     }
 
-    // Garlic + Super Garlic (higher chance now)
+    // Garlic + Super Garlic – place at correct terrain height
     const garlicCount = 2 + Math.floor(hash(cx * 7, cz * 9) * 3);
     for (let i = 0; i < garlicCount; i++) {
       const hx = hash(cx + i * 47, cz + i * 53);
@@ -222,9 +215,9 @@ export class World {
       if (Math.sqrt(x * x + z * z) < 7) continue;
       if (this._isOnWater(x, z)) continue;
 
-      // ~22% chance of Super Garlic (was ~12%)
       const isSuper = hash(cx + i * 71, cz + i * 73) > 0.78;
-      this.garlicManager.spawn(x, z, isSuper);
+      const groundY = this.getHeightAt(x, z);
+      this.garlicManager.spawn(x, z, isSuper, groundY);
     }
 
     this.chunks.set(key, { objects, cx, cz });

@@ -20,22 +20,32 @@ export class GarlicManager {
     });
   }
 
-  spawn(x, z, isSuper = false) {
+  /**
+   * @param {number} x
+   * @param {number} z
+   * @param {boolean} isSuper
+   * @param {number} groundY  terrain height at this position
+   */
+  spawn(x, z, isSuper = false, groundY = 0) {
     const mesh = new THREE.Mesh(
       isSuper ? this.superGeo : this.geo,
       isSuper ? this.superMat : this.mat
     );
-    mesh.position.set(x, isSuper ? 0.7 : 0.4, z);
+
+    const baseHeight = isSuper ? 0.7 : 0.45;
+    mesh.position.set(x, groundY + baseHeight, z);
     mesh.castShadow = true;
+
+    // Remember the ground-relative height for the float animation
+    mesh.userData.baseHeight = groundY + baseHeight;
 
     const stem = new THREE.Mesh(
       new THREE.CylinderGeometry(0.05, 0.05, isSuper ? 0.4 : 0.25),
       new THREE.MeshStandardMaterial({ color: 0x4a7c3a })
     );
-    stem.position.y = isSuper ? 0.7 : 0.45;
+    stem.position.y = isSuper ? 0.55 : 0.35;
     mesh.add(stem);
 
-    // Extra glow ring for Super Garlic so it stands out
     if (isSuper) {
       const ring = new THREE.Mesh(
         new THREE.TorusGeometry(0.7, 0.06, 8, 16),
@@ -48,7 +58,7 @@ export class GarlicManager {
         })
       );
       ring.rotation.x = Math.PI / 2;
-      ring.position.y = 0.1;
+      ring.position.y = 0.05;
       mesh.add(ring);
     }
 
@@ -66,12 +76,20 @@ export class GarlicManager {
       const g = this.garlics[i];
       if (g.collected) continue;
 
-      const baseY = g.isSuper ? 0.7 : 0.4;
-      g.mesh.position.y = baseY + Math.sin(Date.now() * 0.004 + i) * 0.18;
+      // Float animation relative to its own base height
+      const base = g.mesh.userData.baseHeight || 0.45;
+      g.mesh.position.y = base + Math.sin(Date.now() * 0.004 + i) * 0.18;
       g.mesh.rotation.y += g.isSuper ? 0.05 : 0.02;
 
-      const dist = playerPos.distanceTo(g.mesh.position);
-      if (dist < (g.isSuper ? 1.8 : 1.35)) {
+      // IMPORTANT: use horizontal (2D) distance only
+      // so hills / different Y never break collection
+      const dx = playerPos.x - g.mesh.position.x;
+      const dz = playerPos.z - g.mesh.position.z;
+      const dist2D = Math.sqrt(dx * dx + dz * dz);
+
+      const collectRadius = g.isSuper ? 2.0 : 1.6;
+
+      if (dist2D < collectRadius) {
         g.collected = true;
         this.scene.remove(g.mesh);
         this.garlics.splice(i, 1);
