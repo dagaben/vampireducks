@@ -3,7 +3,8 @@ import { CHUNK_SIZE, VIEW_DISTANCE } from '../utils/constants.js';
 import { hash, randomRange } from '../utils/helpers.js';
 
 /**
- * Forest world — lakes must stay clear of trees and rocks.
+ * Forest world — lakes & rivers stay permanently clear of trees/rocks.
+ * Rivers are narrow so the player can jump across them.
  */
 export class World {
   constructor(scene, garlicManager) {
@@ -66,7 +67,7 @@ export class World {
   /** Shared deterministic lake params for a chunk */
   _lakeParams(cx, cz) {
     if (hash(cx * 2 + 17, cz * 3 + 31) <= 0.88) return null;
-    const radius = 3.2 + hash(cx + 11, cz + 13) * 2.2;
+    const radius = 3.0 + hash(cx + 11, cz + 13) * 1.8;
     const baseX = cx * CHUNK_SIZE;
     const baseZ = cz * CHUNK_SIZE;
     const lx = baseX + 10 + hash(cx + 5, cz + 2) * (CHUNK_SIZE - 20);
@@ -90,7 +91,6 @@ export class World {
   }
 
   _isOnWater(x, z) {
-    // Registered zones
     for (const w of this.waterZones) {
       if (w.type === 'lake') {
         const dx = x - w.x;
@@ -104,10 +104,9 @@ export class World {
         }
       }
     }
-    // Predict lakes from this + neighboring chunks (same formula as spawn)
     const cx = Math.floor(x / CHUNK_SIZE);
     const cz = Math.floor(z / CHUNK_SIZE);
-    const MARGIN = 4.5;
+    const MARGIN = 6.5;
     for (let dx = -1; dx <= 1; dx++) {
       for (let dz = -1; dz <= 1; dz++) {
         const p = this._lakeParams(cx + dx, cz + dz);
@@ -126,7 +125,6 @@ export class World {
     const baseX = cx * CHUNK_SIZE;
     const baseZ = cz * CHUNK_SIZE;
 
-    // 1) WATER FIRST — register zones before any vegetation
     const lake = this._lakeParams(cx, cz);
     if (lake) {
       const { lx, lz, radius } = lake;
@@ -137,11 +135,11 @@ export class World {
       mesh.position.set(lx, h + 0.08, lz);
       this.scene.add(mesh);
       objects.push(mesh);
-      this.waterZones.push({ type: 'lake', x: lx, z: lz, radius: radius + 4.5 });
+      this.waterZones.push({ type: 'lake', x: lx, z: lz, radius: radius + 6.5 });
     }
 
     if (hash(cx * 1.7, cz * 2.3) > 0.78) {
-      const riverWidth = 3.2;
+      const riverWidth = 2.0;
       const isHorizontal = hash(cx, cz + 11) > 0.5;
       const rx = baseX + CHUNK_SIZE / 2;
       const rz = baseZ + CHUNK_SIZE / 2;
@@ -161,24 +159,21 @@ export class World {
         type: 'river',
         x: rx,
         z: rz,
-        halfW: riverWidth * 0.5 + 2.0,
+        halfW: riverWidth * 0.5 + 2.8,
         halfL: CHUNK_SIZE * 0.55,
         horizontal: isHorizontal
       });
 
-      if (hash(cx + 3, cz + 4) > 0.35) {
-        const bridge = new THREE.Mesh(
-          new THREE.BoxGeometry(isHorizontal ? 5 : 3.2, 0.35, isHorizontal ? 3.2 : 5),
-          this.bridgeMat
-        );
-        bridge.position.set(rx, rh + 0.35, rz);
-        bridge.castShadow = true;
-        this.scene.add(bridge);
-        objects.push(bridge);
-      }
+      const bridge = new THREE.Mesh(
+        new THREE.BoxGeometry(isHorizontal ? 6 : 2.4, 0.35, isHorizontal ? 2.4 : 6),
+        this.bridgeMat
+      );
+      bridge.position.set(rx, rh + 0.35, rz);
+      bridge.castShadow = true;
+      this.scene.add(bridge);
+      objects.push(bridge);
     }
 
-    // 2) Paths (not on water)
     if (hash(cx * 4.1, cz * 5.3) > 0.7) {
       const px = baseX + 10 + hash(cx, cz) * 20;
       const pz = baseZ + CHUNK_SIZE / 2;
@@ -194,7 +189,6 @@ export class World {
       }
     }
 
-    // 3) Trees — hard skip if on water
     const treeCount = 5 + Math.floor(hash(cx * 3, cz * 7) * 7);
     for (let i = 0; i < treeCount; i++) {
       const hx = hash(cx + i * 13, cz + i * 17);
@@ -211,7 +205,6 @@ export class World {
       else this._createBush(x, z, objects);
     }
 
-    // Rocks
     const rockCount = 1 + Math.floor(hash(cx * 5, cz * 11) * 3);
     for (let i = 0; i < rockCount; i++) {
       const hx = hash(cx + i * 31, cz + i * 37);
@@ -223,7 +216,6 @@ export class World {
       this._createRock(x, z, objects);
     }
 
-    // Flowers
     const flowerCount = 6 + Math.floor(hash(cx * 11, cz * 13) * 10);
     for (let i = 0; i < flowerCount; i++) {
       const hx = hash(cx + i * 53, cz + i * 59);
@@ -235,8 +227,7 @@ export class World {
       this._createFlower(x, z, objects);
     }
 
-    // Garlic: ~10% more; every 10th is Super (+10 garlic)
-    const garlicCount = 3 + Math.floor(hash(cx * 7, cz * 9) * 3); // was 2+0..2, now 3+0..2
+    const garlicCount = 3 + Math.floor(hash(cx * 7, cz * 9) * 3);
     let placed = 0;
     for (let i = 0; i < garlicCount + 4; i++) {
       if (placed >= garlicCount) break;
@@ -249,7 +240,6 @@ export class World {
       if (this._isOnWater(x, z)) continue;
 
       placed++;
-      // Every 10th garlic in world order → Super (approx 1 per 10)
       const isSuper = placed % 10 === 0 || hash(cx + i * 71, cz + i * 73) > 0.92;
       const groundY = this.getHeightAt(x, z);
       this.garlicManager.spawn(x, z, isSuper, groundY);
