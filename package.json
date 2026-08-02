@@ -1,0 +1,22 @@
+{
+  "name": "vampireducks",
+  "version": "0.1.0",
+  "description": "Vampire Ducks - Endless 3D isometric CatDog survival game against rubber vampire ducks",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && gh-pages -d dist"
+  },
+  "keywords": ["game", "threejs", "vampire", "ducks", "catdog", "endless"],
+  "author": "dagaben",
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.10",
+    "gh-pages": "^6.2.0"
+  }
+}
