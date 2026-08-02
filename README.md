@@ -1,78 +1,74 @@
-# Vampire Ducks
+# Vampire Ducks 🧄🦆
 
-A web-based endless 3D isometric survival game where a cute chibi CatDog mutant collects garlic to petrify rubber vampire ducks in a procedurally generated forest.
+A fun endless 3D isometric survival game for kids!  
+Play as a cute chibi **CatDog** mutant, collect garlic in a procedurally generated forest, and petrify the rubber **Vampire Ducks** before they get you!
 
-## Play the Game
+## Play Now
 
-*(Link will be added once the first playable version is deployed)*
+**Once GitHub Pages is enabled** the game will be available at:  
+👉 **https://dagaben.github.io/vampireducks/**
 
-## Game Design (Locked)
+(You may need to enable GitHub Pages in the repository Settings → Pages → Source: GitHub Actions)
 
-- **Camera**: Isometric-style top-down
-- **Controls**:
-  - Desktop: Arrow keys + J (jump)
-  - Mobile: Virtual joystick (bottom-left) + tap to jump
-- **Player**: Cute chibi fused CatDog mutant
-- **Core mechanic**: Collect garlic (walk-over). ≥10 garlic petrifies a duck (costs 10 garlic). <10 garlic costs 1 life.
-- **Lives**: 5 starting. Hit 100 garlic → +1 life (garlic count stays). 0 lives = Game Over → restart.
-- **Ducks**: Walk (funny waddle), swim slowly, short flights. Progressively aggressive every 30 garlic collected. Petrified form lasts ~10s then disappears.
-- **Environment**: Endless procedural stylized-cartoon forest (trees impassable, rivers crossable, bridges, rocks, mountains, bushes, flowers, mushrooms, lakes). Day/Night cycle (night = more ducks).
-- **No power-ups** in first version.
-- **Audio**: Forest ambiance, approaching duck quacks, "meowbuf" on petrify.
-- **Art**: Stylized cartoon, natural colors.
-- **Goal**: Long survival sessions + high score.
-
-## Tech Stack
-
-- **Three.js** for 3D rendering
-- **Vite** for development & build
-- Pure web (no install needed for players)
-- Deployable to GitHub Pages / Netlify / Vercel
-
-## Project Structure
-
-```
-vampireducks/
-├── public/                 # Static assets (models, textures, sounds later)
-├── src/
-│   ├── main.js             # Entry point
-│   ├── style.css           # Global styles + HUD
-│   ├── game/
-│   │   ├── Game.js         # Main game loop & state
-│   │   ├── Player.js       # CatDog controller
-│   │   ├── Duck.js         # Vampire rubber duck AI
-│   │   ├── World.js        # Procedural forest generation
-│   │   ├── Garlic.js       # Collectibles
-│   │   ├── Camera.js       # Isometric camera follow
-│   │   ├── Input.js        # Keyboard + mobile controls
-│   │   ├── UI.js           # HUD, lives, garlic count, game over
-│   │   └── Audio.js        # Sound management
-│   └── utils/
-│       ├── constants.js
-│       └── helpers.js
-├── index.html
-├── package.json
-├── vite.config.js
-├── .gitignore
-└── README.md
-```
-
-## Development
+### Local Play (for development)
 
 ```bash
+git clone https://github.com/dagaben/vampireducks.git
+cd vampireducks
 npm install
-npm run dev          # Local development server
-npm run build        # Production build
-npm run preview      # Preview production build
+npm run dev
 ```
+Then open the local URL shown in the terminal (usually http://localhost:5173).
 
-## Versioning & Deployment
+## Controls
 
-- `main` branch = stable / production
-- Feature branches for development
-- Tags for releases (v0.1.0, v0.2.0, ...)
-- GitHub Pages deployment for public playable link
+| Platform | Movement | Jump |
+|----------|----------|------|
+| Desktop  | Arrow keys | **J** |
+| Mobile   | Virtual joystick (bottom-left) | Tap the **JUMP** button |
 
-## Credits
+## How to Play
 
-Created for kids – fun, cartoonish, endless garlic-fueled survival against rubber vampire ducks!
+- Collect **garlic** by walking over it.
+- When you have **10 or more garlic** and a duck touches you → the duck turns to **stone** for 10 seconds and you lose 10 garlic.
+- If you have fewer than 10 garlic when a duck touches you → you lose **1 life**.
+- Reach **100 garlic** → gain 1 life back (garlic stays at 100).
+- You start with **5 lives**. At 0 lives → Game Over.
+- **Day** = fewer ducks (good collecting time).  
+  **Night** = more aggressive ducks.
+- Difficulty slowly increases every 30 garlic collected.
+- Survive as long as you can and beat your high score!
+
+## Current Version: v0.1.0 (First Playable)
+
+✅ Isometric camera  
+✅ Desktop + Mobile controls  
+✅ Player movement & jump  
+✅ Procedural forest (trees, rocks, rivers, bridges, garlic)  
+✅ Chasing rubber vampire ducks  
+✅ Garlic collection & petrify system  
+✅ Lives + life regain at 100  
+✅ Day/Night cycle  
+✅ Score & Game Over screen  
+
+### Coming later
+- Better CatDog & duck models / animations
+- Flying & swimming ducks fully polished
+- More forest details (flowers, mushrooms, mountains)
+- Sound effects (forest ambiance, quacks, "meowbuf")
+- Particle effects on petrify
+- High-score saving
+
+## Tech
+
+- Three.js + Vite
+- Pure web – works in any modern browser
+- Designed for longer survival sessions
+
+## Repository Structure
+
+See the `src/` folder for modular game code (Player, Duck, World, etc.).
+
+---
+
+Made with ❤️ for kids who love silly adventures.
