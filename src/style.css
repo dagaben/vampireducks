@@ -137,19 +137,18 @@ html, body {
   display: none;
 }
 
-/* Street Fighter style title banner */
+/* Title poster (user artwork) */
 #title-banner {
-  width: min(92vw, 720px);
+  width: min(72vw, 360px);
   height: auto;
-  max-height: 48vh;
+  max-height: 58vh;
   object-fit: contain;
-  border-radius: 12px;
+  border-radius: 14px;
   box-shadow:
     0 0 0 3px #ffcc00,
     0 0 0 6px #8b0000,
-    0 12px 40px rgba(0, 0, 0, 0.6);
-  margin-bottom: 16px;
-  image-rendering: auto;
+    0 14px 40px rgba(0, 0, 0, 0.65);
+  margin-bottom: 18px;
 }
 
 .tagline {
@@ -215,14 +214,22 @@ html, body {
   color: #ccc !important;
 }
 
-@media (max-height: 600px) {
+@media (max-height: 700px) {
   #title-banner {
-    max-height: 38vh;
-    margin-bottom: 8px;
+    max-height: 48vh;
+    width: min(60vw, 300px);
+    margin-bottom: 10px;
   }
   .tagline {
     font-size: 0.95rem;
     margin-bottom: 12px;
+  }
+}
+
+@media (min-width: 900px) and (min-height: 800px) {
+  #title-banner {
+    width: min(40vw, 400px);
+    max-height: 62vh;
   }
 }
 
