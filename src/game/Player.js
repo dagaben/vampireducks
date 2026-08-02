@@ -3,18 +3,17 @@ import { PLAYER_SPEED, JUMP_FORCE, GRAVITY, PLAYER_RADIUS, PLAYER_HEIGHT } from 
 
 /**
  * Cute chibi CatDog player controller.
- * Uses a simple capsule-like representation (we'll improve visuals later).
  */
 export class Player {
   constructor(scene) {
     this.scene = scene;
 
-    // Visual – simple cute chibi body (box + spheres for now)
+    // Visual – simple cute chibi body
     this.group = new THREE.Group();
 
     // Body
     const bodyGeo = new THREE.CapsuleGeometry(0.55, 0.5, 4, 8);
-    const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffb366 }); // warm orange-ish
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffb366 });
     this.body = new THREE.Mesh(bodyGeo, bodyMat);
     this.body.castShadow = true;
     this.group.add(this.body);
@@ -46,7 +45,7 @@ export class Player {
     nose.position.set(0, 0.9, 0.42);
     this.group.add(nose);
 
-    this.group.position.y = PLAYER_HEIGHT / 2;
+    this.group.position.set(0, PLAYER_HEIGHT / 2, 0);
     scene.add(this.group);
 
     // Physics state
@@ -54,7 +53,6 @@ export class Player {
     this.onGround = true;
     this.radius = PLAYER_RADIUS;
 
-    // Facing direction for future animations
     this.facing = new THREE.Vector3(0, 0, 1);
   }
 
@@ -65,7 +63,7 @@ export class Player {
   update(delta, input, world) {
     const move = input.getMovementVector();
 
-    // Horizontal movement
+    // Horizontal movement intent
     this.velocity.x = move.x * PLAYER_SPEED;
     this.velocity.z = move.z * PLAYER_SPEED;
 
@@ -78,27 +76,29 @@ export class Player {
     // Gravity
     this.velocity.y -= GRAVITY * delta;
 
-    // Apply velocity
+    // --- Axis-separated movement + collision (allows sliding) ---
     const nextPos = this.group.position.clone();
+
+    // Move on X
     nextPos.x += this.velocity.x * delta;
+    if (world) {
+      world.resolveCollisions(nextPos, this.radius);
+    }
+
+    // Move on Z
     nextPos.z += this.velocity.z * delta;
+    if (world) {
+      world.resolveCollisions(nextPos, this.radius);
+    }
+
+    // Vertical
     nextPos.y += this.velocity.y * delta;
 
-    // Simple ground collision
+    // Ground collision
     if (nextPos.y <= PLAYER_HEIGHT / 2) {
       nextPos.y = PLAYER_HEIGHT / 2;
       this.velocity.y = 0;
       this.onGround = true;
-    }
-
-    // World collision (trees, rocks) – very simple sphere vs objects
-    if (world) {
-      const blocked = world.resolveCollisions(nextPos, this.radius);
-      if (blocked) {
-        // keep previous x/z if blocked, still allow y
-        nextPos.x = this.group.position.x;
-        nextPos.z = this.group.position.z;
-      }
     }
 
     this.group.position.copy(nextPos);
@@ -111,7 +111,6 @@ export class Player {
     }
   }
 
-  // Called when jumping on a duck
   bounce() {
     this.velocity.y = JUMP_FORCE * 0.75;
     this.onGround = false;
