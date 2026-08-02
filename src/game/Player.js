@@ -3,6 +3,7 @@ import { PLAYER_SPEED, JUMP_FORCE, GRAVITY, PLAYER_RADIUS, PLAYER_HEIGHT } from 
 
 /**
  * Detailed cute chibi CatDog — follows gentle terrain height.
+ * Air control + momentum so jumping no longer cancels forward movement.
  */
 export class Player {
   constructor(scene) {
@@ -108,6 +109,10 @@ export class Player {
     this.radius = PLAYER_RADIUS;
     this.facing = new THREE.Vector3(0, 0, 1);
     this.invulnTimer = 0;
+
+    // Remember last horizontal input so we keep moving while airborne
+    this._lastMoveX = 0;
+    this._lastMoveZ = 0;
   }
 
   get position() {
@@ -131,18 +136,41 @@ export class Player {
     }
 
     const move = input.getMovementVector();
-    this.velocity.x = move.x * PLAYER_SPEED;
-    this.velocity.z = move.z * PLAYER_SPEED;
+    const hasInput = move.x !== 0 || move.z !== 0;
+
+    if (hasInput) {
+      // Full control on ground and in air
+      this.velocity.x = move.x * PLAYER_SPEED;
+      this.velocity.z = move.z * PLAYER_SPEED;
+      this._lastMoveX = move.x;
+      this._lastMoveZ = move.z;
+    } else if (this.onGround) {
+      // Stop when grounded and no input
+      this.velocity.x = 0;
+      this.velocity.z = 0;
+      this._lastMoveX = 0;
+      this._lastMoveZ = 0;
+    } else {
+      // Airborne with no input → keep previous horizontal momentum
+      this.velocity.x = this._lastMoveX * PLAYER_SPEED;
+      this.velocity.z = this._lastMoveZ * PLAYER_SPEED;
+    }
 
     if (input.consumeJump() && this.onGround) {
       this.velocity.y = JUMP_FORCE;
       this.onGround = false;
+      // Ensure we carry the direction we had at the moment of the jump
+      if (hasInput) {
+        this._lastMoveX = move.x;
+        this._lastMoveZ = move.z;
+      }
     }
 
     this.velocity.y -= GRAVITY * delta;
 
     const nextPos = this.group.position.clone();
 
+    // Horizontal movement (always applied, including mid-air)
     nextPos.x += this.velocity.x * delta;
     if (world) world.resolveCollisions(nextPos, this.radius);
 
@@ -155,8 +183,8 @@ export class Player {
 
     nextPos.y += this.velocity.y * delta;
 
-    // Stick to ground when walking / landing (climb gentle hills)
-    if (nextPos.y <= groundY + 0.05) {
+    // Stick to ground when walking / landing
+    if (nextPos.y <= groundY + 0.08) {
       nextPos.y = groundY;
       this.velocity.y = 0;
       this.onGround = true;
@@ -166,9 +194,12 @@ export class Player {
 
     this.group.position.copy(nextPos);
 
-    if (move.x !== 0 || move.z !== 0) {
-      this.facing.set(move.x, 0, move.z).normalize();
-      this.group.rotation.y = Math.atan2(move.x, move.z);
+    // Face the direction of movement (use last move when airborne with no input)
+    const faceX = hasInput ? move.x : this._lastMoveX;
+    const faceZ = hasInput ? move.z : this._lastMoveZ;
+    if (faceX !== 0 || faceZ !== 0) {
+      this.facing.set(faceX, 0, faceZ).normalize();
+      this.group.rotation.y = Math.atan2(faceX, faceZ);
     }
   }
 
