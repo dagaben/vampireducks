@@ -10,7 +10,6 @@ import {
   GARLIC_THRESHOLD,
   LIFE_REGAIN_THRESHOLD,
   DIFFICULTY_STEP,
-  DUCK_SPAWN_INTERVAL_DAY,
   DUCK_SPAWN_INTERVAL_NIGHT,
   DAY_LENGTH,
   NIGHT_LENGTH,
@@ -112,11 +111,22 @@ export class Game {
 
     const delta = Math.min(this.clock.getDelta(), 0.05);
 
+    // Day / Night cycle
     this.timeOfDay += delta;
     const cycleLen = this.isDay ? DAY_LENGTH : NIGHT_LENGTH;
     if (this.timeOfDay >= cycleLen) {
       this.timeOfDay = 0;
       this.isDay = !this.isDay;
+
+      if (this.isDay) {
+        // Dawn: all vampire ducks flee / vanish — safe collecting time
+        this.duckManager.clear();
+        this.duckSpawnTimer = 0;
+      } else {
+        // Dusk: start spawning ducks soon
+        this.duckSpawnTimer = 1.5;
+      }
+
       this.applyDayNightVisuals();
       this.updateHUD();
     }
@@ -141,20 +151,23 @@ export class Game {
       this.updateHUD();
     });
 
-    this.duckSpawnTimer -= delta;
-    if (this.duckSpawnTimer <= 0) {
-      this.spawnDuckNearPlayer();
-      const base = this.isDay ? DUCK_SPAWN_INTERVAL_DAY : DUCK_SPAWN_INTERVAL_NIGHT;
-      this.duckSpawnTimer = base / (1 + this.difficultyLevel * 0.15);
-    }
+    // Ducks ONLY during night — day is free garlic collecting
+    if (!this.isDay) {
+      this.duckSpawnTimer -= delta;
+      if (this.duckSpawnTimer <= 0) {
+        this.spawnDuckNearPlayer();
+        const base = DUCK_SPAWN_INTERVAL_NIGHT;
+        this.duckSpawnTimer = base / (1 + this.difficultyLevel * 0.15);
+      }
 
-    this.duckManager.update(
-      delta,
-      this.player,
-      !this.isDay,
-      this.world,
-      (duck) => this.handleDuckContact(duck)
-    );
+      this.duckManager.update(
+        delta,
+        this.player,
+        true, // night = more aggressive movement already in Duck
+        this.world,
+        (duck) => this.handleDuckContact(duck)
+      );
+    }
 
     this.score += delta * 2;
     this.cameraController.update(delta);
@@ -216,7 +229,7 @@ export class Game {
     document.getElementById('lives').textContent = `❤️ ${this.lives}`;
     document.getElementById('garlic-count').textContent = `🧄 ${this.garlicCount}`;
     document.getElementById('score').textContent = `Score: ${Math.floor(this.score)}`;
-    document.getElementById('time-of-day').textContent = this.isDay ? '☀️ Day' : '🌙 Night';
+    document.getElementById('time-of-day').textContent = this.isDay ? '☀️ Day (safe)' : '🌙 Night (ducks!)';
   }
 
   gameOver() {
