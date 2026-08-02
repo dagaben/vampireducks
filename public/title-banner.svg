@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" role="img" aria-label="Vampire Ducks">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a0a2e"/>
+      <stop offset="45%" stop-color="#3d1560"/>
+      <stop offset="100%" stop-color="#0d2818"/>
+    </linearGradient>
+    <linearGradient id="titleGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffe566"/>
+      <stop offset="40%" stop-color="#ffaa00"/>
+      <stop offset="100%" stop-color="#ff4400"/>
+    </linearGradient>
+    <linearGradient id="vsGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#ffcc00"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="hardShadow">
+      <feDropShadow dx="4" dy="5" stdDeviation="0" flood-color="#000" flood-opacity="0.85"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="420" fill="url(#sky)"/>
+  <!-- Forest silhouette -->
+  <path fill="#0a1f12" d="M0 320 L40 260 L70 300 L110 220 L150 290 L190 200 L230 280 L280 190 L320 270 L360 210 L400 300 L440 230 L480 310 L520 200 L560 290 L600 240 L640 300 L680 210 L720 280 L760 230 L800 300 L840 250 L900 320 L900 420 L0 420 Z"/>
+  <path fill="#06140c" opacity="0.7" d="M0 360 L60 300 L100 340 L160 280 L220 350 L280 290 L340 360 L400 300 L460 355 L520 280 L580 350 L640 300 L700 360 L760 310 L820 355 L900 320 L900 420 L0 420 Z"/>
+
+  <!-- Moon -->
+  <circle cx="780" cy="70" r="38" fill="#fff8d6" opacity="0.9" filter="url(#glow)"/>
+  <circle cx="792" cy="62" r="30" fill="#3d1560"/>
+
+  <!-- Garlic bursts -->
+  <g opacity="0.85">
+    <ellipse cx="120" cy="100" rx="14" ry="18" fill="#f5f0d8" stroke="#c8b878" stroke-width="2"/>
+    <rect x="116" y="78" width="8" height="14" rx="2" fill="#4a7c3a"/>
+    <ellipse cx="780" cy="200" rx="12" ry="16" fill="#ffd700" stroke="#aa7700" stroke-width="2"/>
+    <rect x="776" y="180" width="8" height="12" rx="2" fill="#4a7c3a"/>
+  </g>
+
+  <!-- LEFT: CatDog fighter pose -->
+  <g transform="translate(90,140)" filter="url(#hardShadow)">
+    <!-- body -->
+    <ellipse cx="70" cy="120" rx="48" ry="55" fill="#ffb366"/>
+    <!-- head -->
+    <circle cx="70" cy="45" r="42" fill="#ffcc88"/>
+    <!-- ears -->
+    <polygon points="40,15 28,-10 55,5" fill="#ffaa55"/>
+    <polygon points="100,15 112,-10 85,5" fill="#ffaa55"/>
+    <polygon points="40,12 32,-2 52,6" fill="#ffaaaa"/>
+    <polygon points="100,12 108,-2 88,6" fill="#ffaaaa"/>
+    <!-- eyes -->
+    <circle cx="55" cy="42" r="10" fill="#fff"/>
+    <circle cx="85" cy="42" r="10" fill="#fff"/>
+    <circle cx="57" cy="44" r="5" fill="#222"/>
+    <circle cx="87" cy="44" r="5" fill="#222"/>
+    <!-- nose -->
+    <ellipse cx="70" cy="55" rx="9" ry="7" fill="#3a2211"/>
+    <!-- mouth determined -->
+    <path d="M58 68 Q70 78 82 68" fill="none" stroke="#552211" stroke-width="3" stroke-linecap="round"/>
+    <!-- arms fighting pose -->
+    <ellipse cx="20" cy="100" rx="18" ry="28" fill="#ffaa66" transform="rotate(-35 20 100)"/>
+    <ellipse cx="125" cy="95" rx="18" ry="32" fill="#ffaa66" transform="rotate(40 125 95)"/>
+    <!-- paws -->
+    <circle cx="8" cy="115" r="12" fill="#ff9966"/>
+    <circle cx="140" cy="80" r="12" fill="#ff9966"/>
+    <!-- legs -->
+    <ellipse cx="50" cy="175" rx="16" ry="30" fill="#ffb366"/>
+    <ellipse cx="95" cy="175" rx="16" ry="30" fill="#ffb366"/>
+    <!-- tail -->
+    <path d="M115 140 Q150 160 145 190" fill="none" stroke="#ffb366" stroke-width="14" stroke-linecap="round"/>
+  </g>
+
+  <!-- RIGHT: Vampire Duck -->
+  <g transform="translate(620,130)" filter="url(#hardShadow)">
+    <!-- cape -->
+    <path d="M40 60 L-10 180 L50 160 L100 185 L90 55 Z" fill="#2a0030"/>
+    <!-- body rubber duck -->
+    <ellipse cx="70" cy="130" rx="55" ry="48" fill="#ffdd44"/>
+    <!-- head -->
+    <circle cx="70" cy="70" r="38" fill="#ffdd44"/>
+    <!-- beak -->
+    <polygon points="70,75 70,95 120,85" fill="#ff8800"/>
+    <!-- vampire fangs on beak -->
+    <polygon points="95,82 98,95 101,82" fill="#fff"/>
+    <polygon points="105,80 108,93 111,80" fill="#fff"/>
+    <!-- evil eyes -->
+    <circle cx="55" cy="60" r="9" fill="#ff2222"/>
+    <circle cx="80" cy="60" r="9" fill="#ff2222"/>
+    <circle cx="56" cy="61" r="4" fill="#110000"/>
+    <circle cx="81" cy="61" r="4" fill="#110000"/>
+    <!-- wing raised -->
+    <ellipse cx="15" cy="110" rx="22" ry="35" fill="#eecc33" transform="rotate(-25 15 110)"/>
+  </g>
+
+  <!-- VS badge -->
+  <g transform="translate(450,200)">
+    <circle r="42" fill="#1a0000" stroke="#ffcc00" stroke-width="5"/>
+    <circle r="34" fill="#8b0000"/>
+    <text text-anchor="middle" y="12" font-family="Impact, Arial Black, sans-serif" font-size="36" font-weight="900" fill="url(#vsGrad)" stroke="#000" stroke-width="1.5">VS</text>
+  </g>
+
+  <!-- Title text -->
+  <text x="450" y="58" text-anchor="middle" font-family="Impact, Arial Black, sans-serif" font-size="58" font-weight="900" fill="#000" opacity="0.45">VAMPIRE DUCKS</text>
+  <text x="450" y="54" text-anchor="middle" font-family="Impact, Arial Black, sans-serif" font-size="58" font-weight="900" fill="url(#titleGrad)" stroke="#1a0500" stroke-width="2" filter="url(#glow)">VAMPIRE DUCKS</text>
+
+  <!-- Tagline bar -->
+  <rect x="220" y="385" width="460" height="26" rx="4" fill="#000" opacity="0.55"/>
+  <text x="450" y="403" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#ffe566" letter-spacing="3">COLLECT GARLIC · PETRIFY THE DUCKS</text>
+</svg>

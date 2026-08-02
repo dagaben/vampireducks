@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Vampire Ducks</title>
-  <link rel="stylesheet" href="/src/style.css" />
+  <link rel="stylesheet" href="./src/style.css" />
 </head>
 <body>
   <div id="game-container">
@@ -25,11 +25,17 @@
       <div id="jump-button">JUMP</div>
     </div>
 
-    <!-- Start / Game Over / Pause screens -->
+    <!-- Start screen with Street Fighter style banner -->
     <div id="start-screen" class="overlay">
-      <h1>Vampire Ducks</h1>
-      <p>Collect garlic by day. Survive the rubber vampire ducks by night!</p>
-      <button id="start-button">Play</button>
+      <img
+        id="title-banner"
+        src="./title-banner.svg"
+        alt="Vampire Ducks — CatDog VS Vampire Ducks"
+        width="900"
+        height="420"
+      />
+      <p class="tagline">Collect garlic by day. Survive the rubber vampire ducks by night!</p>
+      <button id="start-button">PLAY</button>
       <p class="controls-hint">Desktop: Arrow keys + J to jump · P to pause<br>Mobile: Joystick + Jump</p>
     </div>
 
@@ -46,6 +52,6 @@
     </div>
   </div>
 
-  <script type="module" src="/src/main.js"></script>
+  <script type="module" src="./src/main.js"></script>
 </body>
 </html>
