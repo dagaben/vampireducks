@@ -1,5 +1,12 @@
 import './style.css';
+import { TITLE_POSTER_SRC } from './titlePoster.js';
 import { Game } from './game/Game.js';
+
+// Set the title banner from the embedded poster
+const banner = document.getElementById('title-banner');
+if (banner) {
+  banner.src = TITLE_POSTER_SRC;
+}
 
 const canvas = document.getElementById('game-canvas');
 const game = new Game(canvas);
