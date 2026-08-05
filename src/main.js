@@ -70,11 +70,19 @@ document.getElementById('resume-button').addEventListener('click', () => {
   game.togglePause();
 });
 
+document.getElementById('mute-button').addEventListener('click', () => {
+  game.audio.toggleMute();
+});
+
 window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyP' || e.key === 'p' || e.key === 'P') {
     if (!document.getElementById('start-screen').classList.contains('hidden')) return;
     if (!document.getElementById('game-over-screen').classList.contains('hidden')) return;
     game.togglePause();
+  }
+  if (e.code === 'KeyM' || e.key === 'm' || e.key === 'M') {
+    if (!document.getElementById('start-screen').classList.contains('hidden')) return;
+    game.audio.toggleMute();
   }
 });
 

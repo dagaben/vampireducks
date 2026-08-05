@@ -5,6 +5,7 @@ import { CameraController } from './Camera.js';
 import { World } from './World.js';
 import { GarlicManager } from './Garlic.js';
 import { DuckManager } from './Duck.js';
+import { AudioManager } from './Audio.js';
 import {
   STARTING_LIVES,
   GARLIC_THRESHOLD,
@@ -24,6 +25,8 @@ export class Game {
     this.isPaused = false;
     this.clock = new THREE.Clock();
     this.onGameOver = null;
+
+    this.audio = new AudioManager();
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x87ceeb);
@@ -81,6 +84,8 @@ export class Game {
     this.isRunning = true;
     this.isPaused = false;
     this.clock.start();
+    // Start audio on user gesture (PLAY)
+    this.audio.play(this.isDay);
     this.animate();
   }
 
@@ -91,9 +96,11 @@ export class Game {
     if (this.isPaused) {
       el.classList.remove('hidden');
       this.clock.stop();
+      this.audio.suspend();
     } else {
       el.classList.add('hidden');
       this.clock.start();
+      this.audio.resume();
     }
   }
 
@@ -154,6 +161,7 @@ export class Game {
       }
 
       this.applyDayNightVisuals();
+      this.audio.setDayNight(this.isDay);
       this.updateHUD();
     }
 
@@ -261,6 +269,7 @@ export class Game {
     this.isRunning = false;
     this.isPaused = false;
     document.getElementById('pause-screen').classList.add('hidden');
+    this.audio.stop();
     if (typeof this.onGameOver === 'function') {
       this.onGameOver(this.score);
     } else {

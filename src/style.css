@@ -41,7 +41,7 @@ html, body {
   z-index: 10;
 }
 
-#hud > div {
+#hud > div:not(#hud-buttons) {
   background: rgba(0, 0, 0, 0.55);
   color: #fff;
   padding: 8px 14px;
@@ -56,20 +56,29 @@ html, body {
   color: #a8e6a1;
 }
 
-#pause-button {
-  pointer-events: auto;
+#hud-buttons {
   margin-left: auto;
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+#pause-button,
+#mute-button {
+  pointer-events: auto;
   background: rgba(0, 0, 0, 0.55);
   color: #fff;
   border: 2px solid rgba(255, 255, 255, 0.25);
   border-radius: 12px;
-  padding: 8px 16px;
+  padding: 8px 14px;
   font-size: 20px;
   cursor: pointer;
   backdrop-filter: blur(4px);
+  line-height: 1;
 }
 
-#pause-button:hover {
+#pause-button:hover,
+#mute-button:hover {
   background: rgba(0, 0, 0, 0.75);
 }
 
